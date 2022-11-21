@@ -1,0 +1,240 @@
+- hosts: all
+  become: true
+  become_user: root
+  gather_facts: false
+
+  tasks:
+    - name: Upgrade System
+      apt: upgrade=dist update_cache=yes
+
+    - name: Add php repository
+      apt_repository:
+        repo: 'ppa:ondrej/php'
+
+    - name: Install PHP
+      apt: name=php{{ php_version }} state=latest
+
+    - name: TO INSTALL PHP MB
+      apt: name=php{{ php_version }}-mbstring state=latest
+
+    - name: TO INSTALL PHP XML
+      apt: name=php-xml state=latest
+
+    - name: TO INSTALL UNZIP
+      apt: name=unzip state=latest
+
+    - name: TO DOWNLOAD COMPOSER
+      get_url:
+        url: https://getcomposer.org/installer
+        dest: /tmp/installer
+
+    - name: NOW TO INSTALL COMPOSER
+      shell: cat /tmp/installer | php -- --install-dir=/usr/local/bin
+      args:
+        creates: /usr/local/bin/composer
+
+    - name: TO MOVE COMPOSER TO RIGHT PATH
+      shell: mv /usr/local/bin/composer.phar /usr/local/bin/composer
+      args:
+        creates: /usr/local/bin/composer
+
+    - name: TO MAKE COMPOSER FILE EXECUTABLE
+      file: 
+        path: /usr/local/bin/composer
+        mode: a+x
+        state: file
+
+    - name: TO INSTALL APACHE SERVER
+      apt:
+        name: apache2
+        state: present
+
+    - name: TO INSTALL PHP CURL
+      shell: sudo apt-get install php-curl -y
+
+    - name: install php8.0-mysql
+      apt: name=php{{php_version}}-mysql state=latest
+
+    - name: install lamp stack
+      apt:
+        pkg:
+          - php8.0-mysql
+          - php8.0-curl
+          - php8.0-cgi
+          - php8.0-xsl
+          - php8.0-gd
+          - php8.0-mbstring
+          - php8.0-zip
+          - php8.0-xmlrpc
+          - php8.0-soap
+          - php8.0-intl
+          - libapache2-mod-php
+        state: present
+        update_cache: yes 
+
+
+    - name: install python, pip etc
+      shell: apt-get -y install "{{ item }}"
+      with_items:
+        - pip 
+        - python3-dev 
+        - default-libmysqlclient-dev 
+        - build-essential
+
+    - name: install php-mysql
+      shell: sudo apt-get install php-mysql -y
+
+    - name: install php-sqlite3
+      shell: sudo apt-get install php-sqlite3 -y
+
+    - name: install mysql-server
+      apt:
+        name: mysql-server
+        state: present
+        update_cache: yes
+
+    - name: install mysql-client
+      apt:
+        name: mysql-client
+        state: present
+        update_cache: yes
+
+    - name: install mysqlclient
+      shell: pip install mysqlclient
+
+    - name: Start the MySQL service
+      action: service name=mysql state=started
+
+    - name: create mysql db
+      mysql_db: name=roland state=present
+
+    - name: create user mysql
+      mysql_user: name=persis password=persis1312 priv=persisdb.*:ALL host='%' state=present
+
+    - name: restart mysql
+      service: name=mysql state=restarted
+    
+
+    - name: remove gitlaravel
+      shell: sudo rm -rf /var/www/html/{{ server_name }}/
+
+    - name: To remove laravelRepo if exist from previous installation
+      shell: sudo rm -rf /var/www/html/{{ server_name }}/
+
+    - name: TO GET CODE FROM REPO
+      git: >
+        repo=https://github.com/f1amy/laravel-realworld-example-app.git
+        dest=/opt/{{ server_name }}
+        force=yes
+        accept_hostkey=yes
+
+    - name: TO COPY LARAVELREPO
+      shell: sudo mv -f /opt/{{ server_name }} /var/www/html/
+
+    - name: copy bash script
+      template:
+        src: bash
+        dest: "/var/www/html/{{ server_name }}/bashscript.sh"
+        mode: 777
+    
+    - name: run bash script
+      shell: sh /var/www/html/{{ server_name }}/bashscript.sh -y
+  
+
+    - name: TO CHANGE COMPOSER PERMISSION
+      shell: sudo chmod -R 777 /var/www/html/{{ server_name }}/
+
+
+    - name: TO CHANGE DEFAULT WEB.PHP PAGE
+      shell: sudo rm -rf /var/www/html/{{ server_name }}/routes/web.php
+
+    - name: TO COPY WEB.PHP
+      copy:
+        src: templates/web.php
+        dest: "/var/www/html/{{ server_name }}/routes/web.php"
+        mode: 777
+    
+
+    - name: TO CHANGE PERMISSION 
+      shell: sudo chown -R $(whoami) /var/www/html/{{ server_name  }}
+
+
+    - name:  TO CHANGE PERMISSION
+      shell: sudo chown root:root /var/www
+
+
+    - name: TO CHANGE PERMISSION
+      shell: sudo chmod 777 /var/www/
+
+    - name: TO CHANGE OWNERSHIP OF WWW
+      shell: sudo chown -R www-data:www-data /var/www/html/{{ server_name }}
+
+    - name: change permission for repo
+      shell: sudo chmod -R 777 /var/www/html/{{ server_name }}
+
+
+    
+    - name: TO RUN COMPOSER INSTALL
+      composer:
+        command: install
+        working_dir: /var/www/html/{{ server_name }}/
+
+
+
+    - name: TO CHANGE PERMISSION
+      shell: sudo chown -R www-data:www-data /var/www/html/{{ server_name }}/
+
+    - name: TO CHANGE PERMISSION FOR storage
+      shell: sudo chmod -R 777 /var/www/html/{{ server_name }}/storage
+
+
+    - name: TO CREATE NEW ENV FILE
+      template: src=env.example dest="/var/www/html/{{ server_name }}/.env"
+    
+    - name: TO GENERATE APP KEY
+      shell: php /var/www/html/{{ server_name }}/artisan key:generate
+
+    - name: TO CHANGE ARTISAN PERMISSION
+      shell: sudo chmod 777 /var/www/html/{{ server_name }}/artisan
+
+    - name: TO START MYSQL SERVICE
+      service: name=mysql state=restarted
+
+
+    - name: UPGRADE AND UPDATE
+      shell: sudo apt update && sudo apt upgrade -y
+      
+    - name: NOW RUN MIGRATION
+      shell: php /var/www/html/{{ server_name }}/artisan migrate
+
+
+    - name: TO UPDATE && UPGRADE
+      shell: sudo apt update && sudo apt upgrade -y 
+
+    - name: TO REMOVE APACHE DEFAULT PAGE
+      file: name=/etc/apache2/sites-enabled/000-default.conf state=absent
+
+    - name: NOW CREATE NEW CONFIG FILE
+      template: src=web.conf.j2 dest="/etc/apache2/sites-available/{{ server_name }}.conf" 
+
+    - name: GIVING CONF FILE THE RIGHT PERMISSION
+      shell: sudo chmod -R 777 /etc/apache2/sites-available/{{ server_name }}.conf
+
+    - name: PERFORM a2ensite
+      command: a2ensite {{ server_name }}
+
+    - name: NOW ENABLE Apache module
+      command:  a2enmod rewrite
+
+      notify:
+        - restart apache2
+
+- handlers:
+    - name: reload apache2
+      service: name=apache2 state=reloaded
+
+    - name: stop apache2
+      service: name=apache2 state=stopped
+    
+    - name: restart apache2
+      service: name=apache2 state=restarted

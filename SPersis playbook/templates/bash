@@ -1,0 +1,49 @@
+#!/usr/bin/bash
+
+#To apdate and updgrde then install psql 
+sudo apt update && sudo apt upgrade -y
+
+#To add repo
+sudo apt install wget ca-certificates
+sudo wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" >> /etc/apt/sources.list.d/pgdg.list'
+
+#Install GnuPG
+sudo apt install -y gnupg2
+
+# Add PostgreSQL APT Repository
+sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+
+# Download PostgreSQL ASC Key
+ sudo wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+
+# Update APT Cache
+sudo apt -y update
+
+# Install PostgreSQL 15
+sudo apt -y install postgresql-15
+sudo apt install postgresql postgresql-contrib -y
+sudo apt install postgresql postgresql-client -y
+
+#To start psql service using the default db postgres and user postgres
+sudo systemctl start postgresql.service
+
+# TO A CREATE POSTGRES database
+sudo -i -u postgres psql -c "CREATE DATABASE persisdb WITH ENCODING 'UTF8' TEMPLATE template0;"
+
+# Create User
+sudo -i -u postgres psql -c "CREATE USER roland WITH ENCRYPTED PASSWORD 'persis1312';"
+
+# Grant user privilege on database
+sudo -i -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE rolanddb to persis;"
+
+# To change postgress password only works in root dir
+cd /
+sudo -u postgres psql -c"ALTER user postgres WITH PASSWORD 'persis1312'"
+
+# Configure user login method in pg_hba.conf
+#echo -e 'local\tall\t\tlaravel\t\t\t\t\tmd5' >> /etc/postgresql/15/main/pg_hba.conf
+
+# Restart PostgreSQL
+sudo systemctl restart postgresql
+
