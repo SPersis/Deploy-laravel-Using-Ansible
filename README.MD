@@ -27,8 +27,7 @@ This code is tested on the AWS ubuntu machine.
 - Copy the private key on the ansible server
 
 ```
-chmod 600 mykey.pem
-scp -r -i /Users/home/Documents/devops4solutions/AWS/mykey.pem /Users/home/Documents/laravelrepo/AWS/mykey.pem ubuntu@18.219.xxx.xxx:~/.
+chmod 400 mykey.pem
 
 ```
   
