@@ -38,7 +38,7 @@ cd Ansible-playbook
 ```
 + then run this code 
 ```
-ansible-playbook main.yml -i inventories/dev/hosts --user ubuntu --key-file /home/download/mykey.pem
+ansible-playbook main.yml -i inventory/hosts --user ubuntu --key-file /home/download/test.pem
 
 ```
 
